@@ -68,6 +68,7 @@ try:
         def __init__(self):
             super().__init__()
             self.image = images["leopard_standing"]
+            self.original_image = self.image
             self.rect = self.image.get_rect()
             self.rect.x = 50
             self.rect.y = SCREEN_HEIGHT - self.rect.height - 10
@@ -79,34 +80,41 @@ try:
             self.is_running = False
             self.is_shooting = False
             self.lives = 10
+            self.facing_right = True
 
         def update(self):
             keys = pygame.key.get_pressed()
             
             if keys[pygame.K_LEFT]:
                 self.rect.x -= self.speed
+                if self.facing_right:
+                    self.image = pygame.transform.flip(self.original_image, True, False)
+                    self.facing_right = False
             if keys[pygame.K_RIGHT]:
                 self.rect.x += self.speed
+                if not self.facing_right:
+                    self.image = pygame.transform.flip(self.original_image, True, False)
+                    self.facing_right = True
             
             if keys[pygame.K_h]:
                 self.is_running = True
                 self.speed = 8
-                self.image = images["leopard_running"]
+                self.original_image = images["leopard_running"]
             else:
                 self.is_running = False
                 self.speed = 5
-                self.image = images["leopard_standing"]
+                self.original_image = images["leopard_standing"]
 
             if keys[pygame.K_UP] and not self.is_jumping:
                 self.is_jumping = True
                 self.vertical_speed = self.jump_speed
-                self.image = images["leopard_jumping"]
+                self.original_image = images["leopard_jumping"]
 
             if self.is_jumping:
                 self.rect.y += self.vertical_speed
                 self.vertical_speed += self.gravity
                 if self.vertical_speed > 0:
-                    self.image = images["leopard_flipping"]
+                    self.original_image = images["leopard_flipping"]
                 if self.rect.bottom >= SCREEN_HEIGHT - 10:
                     self.rect.bottom = SCREEN_HEIGHT - 10
                     self.is_jumping = False
@@ -114,9 +122,14 @@ try:
 
             if keys[pygame.K_x]:
                 self.is_shooting = True
-                self.image = images["leopard_shooting"]
+                self.original_image = images["leopard_shooting"]
             else:
                 self.is_shooting = False
+
+            if not self.facing_right:
+                self.image = pygame.transform.flip(self.original_image, True, False)
+            else:
+                self.image = self.original_image
 
             self.rect.clamp_ip(screen.get_rect())
 
@@ -135,40 +148,52 @@ try:
 
         def update(self):
             self.bomb_timer += 1
-            if self.bomb_timer >= 90:  # Skjut en bomb varje sekund
+            if self.bomb_timer >= 90:  # Skjut en bomb var 1.5 sekund
                 self.bomb_timer = 0
-                return Bomb(self.rect.centerx, self.rect.bottom)
+                return Bomb(self.rect.right, self.rect.centery, direction="left")
             return None
 
     # Bombklass
     class Bomb(pygame.sprite.Sprite):
-        def __init__(self, x, y):
+        def __init__(self, x, y, direction="right"):
             super().__init__()
             self.image = images["bomb"]
             self.rect = self.image.get_rect()
             self.rect.x = x
             self.rect.y = y
             self.speed = 5
+            self.direction = direction
 
         def update(self):
-            self.rect.y += self.speed
-            if self.rect.top > SCREEN_HEIGHT:
-                self.kill()
+            if self.direction == "right":
+                self.rect.x += self.speed
+                if self.rect.left > SCREEN_WIDTH:
+                    self.kill()
+            else:
+                self.rect.x -= self.speed
+                if self.rect.right < 0:
+                    self.kill()
 
     # Blixtklass
     class Thunder(pygame.sprite.Sprite):
-        def __init__(self, x, y):
+        def __init__(self, x, y, direction="right"):
             super().__init__()
             self.image = images["thunder"]
             self.rect = self.image.get_rect()
             self.rect.x = x
             self.rect.y = y
             self.speed = 10
+            self.direction = direction
 
         def update(self):
-            self.rect.x += self.speed
-            if self.rect.left > SCREEN_WIDTH:
-                self.kill()
+            if self.direction == "right":
+                self.rect.x += self.speed
+                if self.rect.left > SCREEN_WIDTH:
+                    self.kill()
+            else:
+                self.rect.x -= self.speed
+                if self.rect.right < 0:
+                    self.kill()
 
     # Skapa spelgrupper
     all_sprites = pygame.sprite.Group()
@@ -179,9 +204,15 @@ try:
     player = Player()
     all_sprites.add(player)
 
-    # Skapa monster
-    for i in range(3):
-        monster = Monster(random.randint(200, SCREEN_WIDTH-100), random.randint(50, SCREEN_HEIGHT-200))
+    # Placera monster i kokosnötter
+    coconut_positions = [
+        {"x": 1524, "y": 817},
+        {"x": 261, "y": 279},
+        {"x": 127, "y": 911}
+    ]
+
+    for pos in coconut_positions:
+        monster = Monster(pos["x"], pos["y"])
         all_sprites.add(monster)
         monsters.add(monster)
 
@@ -195,7 +226,8 @@ try:
                 running = False
             elif event.type == pygame.KEYDOWN:
                 if event.key == pygame.K_x:
-                    thunder = Thunder(player.rect.right, player.rect.centery)
+                    direction = "right" if player.facing_right else "left"
+                    thunder = Thunder(player.rect.right, player.rect.centery, direction)
                     all_sprites.add(thunder)
                     thunders.add(thunder)
                 elif event.key == pygame.K_ESCAPE:

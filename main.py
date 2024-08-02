@@ -34,14 +34,16 @@ try:
             log_error(f"Kunde inte ladda bilden '{name}': {e}")
             return None
 
+    leopard_size_x = 110
+    leopard_size_y = 55
     # Ladda och skala bilder
     images = {
         "background": load_image("level_1.png", SCREEN_WIDTH, SCREEN_HEIGHT),
-        "leopard_standing": load_image("leopard_standing_4_legs.png", 100, 50),
-        "leopard_running": load_image("running_leopard.png", 100, 50),
-        "leopard_shooting": load_image("leopard_standing_hind_legs.png", 100, 50),
-        "leopard_jumping": load_image("leopard_jumping.png", 100, 50),
-        "leopard_flipping": load_image("leopard_flipping.png", 100, 50),
+        "leopard_standing": load_image("leopard_standing_4_legs.png", leopard_size_x, leopard_size_y),
+        "leopard_running": load_image("running_leopard.png", leopard_size_x, leopard_size_y),
+        "leopard_shooting": load_image("leopard_standing_hind_legs.png", leopard_size_x, leopard_size_y),
+        "leopard_jumping": load_image("leopard_jumping.png", leopard_size_x, leopard_size_y),
+        "leopard_flipping": load_image("leopard_flipping.png", leopard_size_x, leopard_size_y),
         "thunder": load_image("thunder_blue.png", 50, 50),
         "bomb": load_image("bomb.png", 30, 30)
     }
@@ -133,7 +135,7 @@ try:
 
         def update(self):
             self.bomb_timer += 1
-            if self.bomb_timer >= 60:  # Skjut en bomb varje sekund
+            if self.bomb_timer >= 90:  # Skjut en bomb varje sekund
                 self.bomb_timer = 0
                 return Bomb(self.rect.centerx, self.rect.bottom)
             return None
